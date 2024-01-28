@@ -1,0 +1,51 @@
+name: Pull Request
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions: write-all
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.x
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        
+    - name: Run Python script and save output to a file
+      run: |
+        python random_fortune.py > output.txt
+        python random_fortune.py
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: output
+        path: output.txt
+
+    - name: Comment on Pull Request
+      uses: actions/github-script@v3
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const fs = require('fs');
+          const output = fs.readFileSync('output.txt', 'utf-8');
+
+          github.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `${output}`,
+          })
